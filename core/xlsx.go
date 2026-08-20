@@ -113,7 +113,7 @@ func columnValues(entry *goldap.Entry, attributes []string) []string {
 	for _, attr := range attributes {
 		var attribute *goldap.EntryAttribute
 		for _, candidate := range entry.Attributes {
-			if candidate.Name == attr {
+			if strings.EqualFold(candidate.Name, attr) {
 				attribute = candidate
 				break
 			}
