@@ -80,10 +80,13 @@ func resolveColumns(entries []*goldap.Entry, requestedAttributes []string) []str
 			hasWildcard = true
 			continue
 		}
+		if strings.EqualFold(attr, "distinguishedName") {
+			continue
+		}
 		explicit = append(explicit, attr)
 	}
 
-	if !hasWildcard && len(explicit) != 0 {
+	if !hasWildcard && len(requestedAttributes) != 0 {
 		return explicit
 	}
 
@@ -94,6 +97,9 @@ func resolveColumns(entries []*goldap.Entry, requestedAttributes []string) []str
 	}
 	for _, entry := range entries {
 		for _, attr := range entry.Attributes {
+			if strings.EqualFold(attr.Name, "distinguishedName") {
+				continue
+			}
 			seen[attr.Name] = struct{}{}
 		}
 	}
