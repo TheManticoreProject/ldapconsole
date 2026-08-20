@@ -357,7 +357,9 @@ func entriesByDN(entries []*goldap.Entry) map[string]*goldap.Entry {
 func attributeMap(entry *goldap.Entry) map[string]string {
 	attrs := make(map[string]string, len(entry.Attributes))
 	for _, attr := range entry.Attributes {
-		attrs[attr.Name] = strings.Join(formatAttributeValues(attr), ", ")
+		values := append([]string(nil), formatAttributeValues(attr)...)
+		sort.Strings(values)
+		attrs[attr.Name] = strings.Join(values, ", ")
 	}
 	return attrs
 }
