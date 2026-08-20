@@ -90,7 +90,13 @@ func parseArgs() {
 
 func main() {
 	parseArgs()
+	if err := run(); err != nil {
+		logger.Warn(err.Error())
+		os.Exit(1)
+	}
+}
 
+func run() error {
 	if !quiet {
 		fmt.Printf("ldapconsole v%s - by Remi GASCOU (Podalirius) @ TheManticoreProject\n\n", VERSION)
 	}
@@ -98,8 +104,7 @@ func main() {
 	// Set up credentials
 	creds, err := credentials.NewCredentials(authDomain, authUsername, authPassword, authHashes)
 	if err != nil {
-		logger.Warn(fmt.Sprintf("Error creating credentials: %s", err))
-		return
+		return fmt.Errorf("Error creating credentials: %w", err)
 	}
 
 	// Use LDAPS default port if not explicitly set
@@ -118,14 +123,12 @@ func main() {
 	// Init the LDAP session
 	ldapSession, err := ldap.NewSession(domainController, ldapPort, creds, useLdaps, useKerberos)
 	if err != nil {
-		logger.Warn(fmt.Sprintf("Error creating LDAP session: %s", err))
-		return
+		return fmt.Errorf("Error creating LDAP session: %w", err)
 	}
 
 	success, err := ldapSession.Connect()
 	if !success {
-		logger.Warn(fmt.Sprintf("Error connecting to LDAP server: %s", err))
-		return
+		return fmt.Errorf("Error connecting to LDAP server: %w", err)
 	}
 	if !quiet {
 		fmt.Printf("[+] Authentication successful!\n\n")
@@ -134,8 +137,7 @@ func main() {
 	// Resolve the default search base from the RootDSE
 	rootDSE, err := ldapSession.GetRootDSE()
 	if err != nil {
-		logger.Warn(fmt.Sprintf("Error fetching RootDSE: %s", err))
-		return
+		return fmt.Errorf("Error fetching RootDSE: %w", err)
 	}
 	searchBase := rootDSE.GetAttributeValue("defaultNamingContext")
 
@@ -150,28 +152,26 @@ func main() {
 
 		results, err := searcher.Query(searchBase, query, queryAttributes, ldap.ScopeWholeSubtree)
 		if err != nil {
-			logger.Warn(fmt.Sprintf("Error performing LDAP query: %s", err))
-			return
+			return fmt.Errorf("Error performing LDAP query: %w", err)
 		}
 
 		if xlsxOutput != "" {
 			fmt.Printf("[>] Exporting %d results to %s ... ", len(results), xlsxOutput)
 			if err := core.ExportToXLSX(xlsxOutput, results, queryAttributes); err != nil {
 				fmt.Println()
-				logger.Warn(fmt.Sprintf("Error exporting to XLSX: %s", err))
-				return
+				return fmt.Errorf("Error exporting to XLSX: %w", err)
 			}
 			fmt.Println("done.")
 		} else {
 			core.PrintResults(results)
 			fmt.Printf("└──> LDAP query returned %d results.\n", len(results))
 		}
-		return
+		return nil
 	}
 
 	// Interactive mode
 	console := core.NewConsole(searcher, searchBase)
 	console.Run()
 
-	os.Exit(0)
+	return nil
 }
